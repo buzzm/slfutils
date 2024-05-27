@@ -1,0 +1,62 @@
+<configuration>
+
+  <root level="DEBUG">
+    <appender-ref ref="CONSOLE" />
+    <!-- <appender-ref ref="FILE" /> -->
+  </root>
+
+  <!-- Before the logging backend kicks in and starts emitting our logs, all
+       sorts of initialization gack shows up on stdout.  This is "OK" when first
+       setting up the logging env because it will report, for example, unknown
+       or potentially misused attributes here in logback.xml.  But once you've
+       got it running, it is cleaner to suppress the startup info thusly.
+       NOTE:  When in FILE appender-ref mode, the gack is still emitted to
+       stdout; it does not "corrupt" our clean JSON files!
+  -->
+  <!-- <statusListener class="ch.qos.logback.core.status.NopStatusListener" />-->
+
+  <!-- Not absolutely required, but this keeps main log and rolled log names
+       consistent.  Note the value can be any path e.g. "/path/to/myLogBasename"
+  -->
+  <property name="logbasename" value="myApp"/>
+
+  <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder class="org.moschetti.slfutils.ExtJSONEncoder">
+      <!-- This can be "expensive", but likely not for low-vol logs.  When true,
+	   method and line number will be logged in the output.
+      -->
+      <includeCallerData>true</includeCallerData>
+    </encoder>
+  </appender>
+
+  <appender name="XXCONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+    </encoder>
+  </appender>  
+
+
+
+
+    
+  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <encoder class="org.moschetti.slfutils.ExtJSONEncoder">
+          <includeCallerData>true</includeCallerData>
+    </encoder>
+      <!-- primary log; must have this:  -->
+      <file>${logbasename}.log</file>
+
+      <!-- When to trigger the roll:  -->
+      <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+        <maxFileSize>4KB</maxFileSize>
+      </triggeringPolicy>
+
+      <!-- When roll occurs, how to name, how many to keep, etc. -->      
+      <rollingPolicy class="ch.qos.logback.core.rolling.FixedWindowRollingPolicy">
+        <fileNamePattern>${logbasename}.%i.log</fileNamePattern>
+        <maxIndex>3</maxIndex> <!-- .3.log is highest -->
+      </rollingPolicy>
+
+    </appender>
+
+</configuration>

@@ -1,0 +1,135 @@
+<project name="moschetti-slfutils" default="testcompile" basedir=".">
+
+    <!-- set global properties for this build -->
+    <property name="src.main"   location="src/main"/>
+    <property name="src.test"   location="src/test"/>
+    <property name="build.main" location="build/main"/>
+    <property name="build.test" location="build/test"/>
+    
+    <property name="dist"       location="dist"/>
+
+    
+    <!-- This is both where build resources (i.e. slf4j.jar) are found AND
+	 where the output is put back.  Change as you wish.
+    -->
+    <property environment="env"/>
+    <property name="jl"         value="${env.HOME}/java/lib"/>
+    
+    <property name="junit"      value="${jl}/junit.jar"/>
+
+    <property name="stagedlib"  value="${dist}/lib/moschetti-slfutils.jar"/>
+
+    <!-- Three kinds of classpaths:
+	1.  One to compile src/main
+	2.  One to compile src/test
+	3.  One to RUN src/test junits
+      -->
+
+    <!-- extending the logging framework needs to see backend imp: -->
+    <path id="main.compile.classpath">
+      <pathelement location="${jl}/slf4j-api-2.0.13.jar"/>
+      <pathelement location="${jl}/logback-classic-1.5.6.jar"/>
+      <pathelement location="${jl}/logback-core-1.5.6.jar"/>
+    </path>
+
+    <!-- Test driver compile, however, ONLY needs to see slf4j-api!  -->
+    <path id="test.compile.classpath">
+      <pathelement location="${jl}/slf4j-api-2.0.13.jar"/>
+
+      <pathelement location="${stagedlib}" />
+      <pathelement location="${junit}" />      
+    </path>
+
+    <!-- When running the exec, we need to see backend imp on classpath
+	 so just reuse the compile.classpat
+    -->
+    <path id="test.run.classpath">
+      <path refid="main.compile.classpath" />
+
+      <!-- This is to pick up logback.xml:  -->
+      <pathelement location="src/main/resources"/>
+      
+      <pathelement path="${build.test}"/>
+
+      <pathelement location="${junit}" />            
+      <pathelement location="${stagedlib}" />
+    </path>
+
+
+    <!-- ======================================================== -->
+    <!--  Below here is all based on the above; no need to touch -->
+    <!--     E X C E P T   THE JUNIT test classes; fix TBD!!      -->
+    <!-- ======================================================== -->
+
+
+    <target name="init">
+      <tstamp/>
+      <mkdir dir="${build.main}"/>
+      <mkdir dir="${build.test}"/>
+    </target>
+    
+
+    <target name="compile" depends="init" >
+      <javac srcdir="${src.main}" destdir="${build.main}" debug="on" includeantruntime="false">
+	<classpath>
+	  <path refid="main.compile.classpath" />
+	</classpath>
+      </javac>
+    </target>
+
+
+
+    <target name="dist" depends="compile"
+            description="generate the distribution" >
+
+      <mkdir dir="${dist}/lib"/>
+      <jar jarfile="${stagedlib}" basedir="${build.main}"/>
+
+    </target>
+
+
+
+
+    <target name="testcompile" depends="dist"
+            description="compile tests against the distribution" >
+      <javac srcdir="${src.test}" destdir="${build.test}" debug="on" includeantruntime="false">
+	<classpath>
+	  <path refid="test.compile.classpath" />
+	</classpath>
+      </javac>
+    </target>
+
+
+    <target name="testrun" depends="testcompile"
+            description="run the junits" >
+
+      <pathconvert property="formatted.classpath" pathsep=":">
+        <path refid="test.run.classpath"/>
+      </pathconvert>
+      <echo message="${formatted.classpath}"/>
+
+      <junit printSummary="yes">
+	<classpath>
+	  <path refid="test.run.classpath" />
+	</classpath>
+	
+	<formatter type="brief" usefile="false"/> 
+	
+	<test name="test.HelloWorldTest"/>
+	
+      </junit>
+    </target>
+    
+
+    <target name="install" depends="dist">
+      <copy file="${stagedlib}" todir="${jl}"/>
+    </target>
+    
+
+    <target name="clean" >
+      <delete dir="${build.main}"/>
+      <delete dir="${build.test}"/>
+      <delete dir="${dist}"/>
+    </target>
+
+</project>
